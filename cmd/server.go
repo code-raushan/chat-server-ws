@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +19,13 @@ var(
 		},
 	}
 )
+
+const (
+	ConnectionCountKey           = "chat:connection-count"
+	ConnectionCountUpdateChannel = "chat:connection-count-updated"
+	NewMessageChannel            = "chat:new-message"
+)
+
 func main(){
 	err := godotenv.Load()
 	if err != nil {
@@ -36,4 +43,22 @@ func main(){
 	})
 
 	defer redisClient.Close()
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	http.HandleFunc("/health", HandleHealthCheck)
+
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+}
+
+func HandleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	response := map[string]string{
+		"status": "ok",
+		"port": os.Getenv("PORT"),
+	}
+	json.NewEncoder(w).Encode(response)
 }
